@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Virtualenvs
+venv/
+env/
+.venv/
+
+# Editor / IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Local agent state
+.claude/
+
+# Logs / runtime artifacts
+*.log
+logs/
+
+# TLS material (never commit private keys / certs)
+*.pem
+*.key
+*.crt
