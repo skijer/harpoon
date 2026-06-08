@@ -1,0 +1,47 @@
+# Harpoon multiplayer server.
+#
+#   docker compose up -d --build      # start (build on first run / after code changes)
+#   docker compose logs -f            # follow logs
+#   docker compose down               # stop and remove
+#
+# Plain ws:// on 8765. For public wss://, put a TLS reverse proxy in front
+# (see the "TLS / public deployment" section of the README) — the simplest
+# is the optional caddy service commented out at the bottom of this file.
+
+services:
+  harpoon:
+    build: .
+    image: harpoon:latest
+    container_name: harpoon
+    restart: unless-stopped
+    ports:
+      - "8765:8765"
+    # To change the port or add flags, override the command:
+    # command: ["--host", "0.0.0.0", "--port", "9000"]
+
+  # --- Optional: terminate TLS with Caddy (auto Let's Encrypt) -------------
+  # Uncomment, set your domain in a Caddyfile next to this file, and bind
+  # harpoon to 127.0.0.1 only so Caddy is the sole public entry point.
+  #
+  #   # Caddyfile
+  #   harpoon.example.com {
+  #       reverse_proxy harpoon:8765
+  #   }
+  #
+  # caddy:
+  #   image: caddy:2-alpine
+  #   container_name: harpoon-caddy
+  #   restart: unless-stopped
+  #   depends_on:
+  #     - harpoon
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./Caddyfile:/etc/caddy/Caddyfile:ro
+  #     - caddy_data:/data
+  #     - caddy_config:/config
+
+# volumes:
+#   caddy_data:
+#   caddy_config:

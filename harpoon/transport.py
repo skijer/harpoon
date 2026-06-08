@@ -16,6 +16,7 @@ from websockets.asyncio.server import ServerConnection, serve
 
 from harpoon import logging as log
 from harpoon.dispatcher import Dispatcher
+from harpoon.primitives import voting
 from harpoon.protocol.envelope import wrap
 from harpoon.room import Room
 from harpoon.security.permissions import PermissionRegistry
@@ -203,6 +204,12 @@ class HarpoonServer:
         log.room(room.room_id, f"{session.name} left")
         if room.is_empty():
             self.rooms.pop(room.room_id, None)
+            # Leak fix: cancel every pending vote-timeout task for this
+            # room and drop the room's slot in voting._active. Without
+            # this, abandoned vote timeouts sleep until their duration
+            # elapses while pinning the deleted Room — the dominant
+            # memory leak on a long-running server with room churn.
+            voting.cleanup_room(room.room_id)
             log.room(room.room_id, "destroyed (empty)")
         else:
             await self.broadcast_room_members(room)

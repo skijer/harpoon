@@ -49,6 +49,66 @@ see the TLS section below.
 
 ---
 
+## Run with Docker
+
+The fastest way to stand up a server on a fresh box (e.g. over SSH on a
+VPS). Requires only Docker with the Compose plugin
+([install](https://docs.docker.com/engine/install/)).
+
+```bash
+git clone https://github.com/skijer/harpoon.git
+cd harpoon
+docker compose up -d --build      # build + start in the background
+docker compose logs -f            # follow logs
+```
+
+The server listens on `ws://0.0.0.0:8765`. The container restarts
+automatically on crash or reboot (`restart: unless-stopped`) and runs as
+an unprivileged user. To stop and remove it: `docker compose down`.
+
+### Prebuilt image — no clone, no build
+
+Once the publish workflow has run (see below), anyone can pull the image
+straight from GitHub Container Registry and run their own server, with no
+git checkout and no build toolchain:
+
+```bash
+docker run -d --name harpoon -p 8765:8765 --restart unless-stopped \
+  ghcr.io/skijer/harpoon:latest
+```
+
+### Plain Docker — build locally
+
+```bash
+docker build -t harpoon .
+docker run -d --name harpoon -p 8765:8765 --restart unless-stopped harpoon
+```
+
+Override the bind or port by appending server flags — they pass straight
+through to `server.py`:
+
+```bash
+docker run -d -p 9000:9000 harpoon --host 0.0.0.0 --port 9000
+```
+
+For public `wss://`, run a TLS reverse proxy in front (see below). The
+`docker-compose.yml` ships with a ready-to-uncomment Caddy service that
+auto-provisions Let's Encrypt certificates.
+
+### Publishing your own image
+
+[`.github/workflows/docker-publish.yml`](.github/workflows/docker-publish.yml)
+builds a multi-arch (amd64 + arm64) image and pushes it to GHCR on every
+push to `main` and every `v*` tag. It needs no secrets — it uses the repo's
+built-in `GITHUB_TOKEN`.
+
+After the first successful run the package is **private** by default. Make
+it public once so others can `docker pull` without authenticating: GitHub →
+your profile → **Packages** → `harpoon` → **Package settings** → **Change
+visibility** → Public.
+
+---
+
 ## TLS / public deployment
 
 The server speaks plain `ws://`. For anything beyond LAN, terminate TLS

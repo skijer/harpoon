@@ -33,6 +33,10 @@ class CombatDealDamage(BaseModel):
     target: int = Field(..., ge=1, alias="targetClientId")
     damage: float = Field(..., ge=0.0, le=999.0)
     damage_flags: DamageFlags = Field(default_factory=DamageFlags)
+    # Engine-specific damage-response code (HARPOON_HIT_RESPONSE_*).
+    # Optional — the schema only validates that it's a small int. The C++
+    # receiver branches on this to pick stagger / fire / stun / etc.
+    damage_effect: int = Field(default=0, alias="damageEffect", ge=0, le=255)
 
 
 class CombatHeal(BaseModel):
@@ -97,11 +101,19 @@ def register(d: Dispatcher) -> None:
                 default_role="player", default_scope="any_in_room")
     async def deal_damage(server, session, room, target, p: CombatDealDamage):
         if target is None: return
+        # Camel-case aliases (clientId, targetClientId, damageEffect) are
+        # what the C++ receiver reads via nlohmann::json. Snake-case is
+        # kept for Python-side tooling. Both forms are emitted so neither
+        # side has to translate.
         await target.send("COMBAT.DEAL_DAMAGE", {
-            "source": session.client_id,
-            "target": p.target,
-            "damage": p.damage,
-            "damage_flags": p.damage_flags.model_dump(),
+            "source":         session.client_id,
+            "clientId":       session.client_id,    # attacker (C++ reads this)
+            "target":         p.target,
+            "targetClientId": p.target,
+            "damage":         p.damage,
+            "damage_flags":   p.damage_flags.model_dump(),
+            "damage_effect":  p.damage_effect,
+            "damageEffect":   p.damage_effect,
         })
 
     @d.register("COMBAT.HEAL", schema=CombatHeal,

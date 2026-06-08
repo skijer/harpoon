@@ -162,3 +162,23 @@ def register(d: Dispatcher) -> None:
         vote = _active.get(room.room_id, {}).get(p.vote_id)
         if vote is None: return
         await _end_vote(server, room, vote, "manual")
+
+
+def cleanup_room(room_id: str) -> None:
+    """Cancel every pending vote timeout for `room_id` and drop the
+    room's slot in the global vote registry.
+
+    Called by the transport layer when a room is destroyed (last member
+    left). Without this, `_active[room_id]` and its `_Vote.timeout_task`
+    asyncio tasks would leak forever — each abandoned timeout sleeps
+    until its duration elapses, holding the deleted Room object by
+    reference. On a long-running server with frequent room churn this
+    becomes the dominant memory leak.
+    """
+    votes = _active.pop(room_id, None)
+    if votes is None:
+        return
+    for vote in votes.values():
+        task = getattr(vote, "timeout_task", None)
+        if task is not None and not task.done():
+            task.cancel()

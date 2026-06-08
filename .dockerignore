@@ -1,0 +1,42 @@
+# Keep the build context (and image) small and free of secrets.
+.git
+.gitignore
+.github
+
+# Python cruft
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Virtualenvs
+venv/
+env/
+.venv/
+
+# Editor / IDE / agent state
+.idea/
+.vscode/
+.claude/
+*.swp
+*.swo
+.DS_Store
+
+# Logs / runtime artifacts
+*.log
+logs/
+
+# TLS material — never bake keys into an image
+*.pem
+*.key
+*.crt
+
+# Docs / build files not needed at runtime
+README.md
+LICENSE
+Dockerfile
+.dockerignore
+docker-compose.yml
